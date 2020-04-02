@@ -1,0 +1,4 @@
+.env
+.db_info
+__pycache__
+ep_files_stat

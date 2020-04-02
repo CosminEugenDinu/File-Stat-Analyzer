@@ -1,0 +1,12 @@
+{
+    "python.pythonPath": "/home/cos/.local/share/virtualenvs/ep_online-yIzJRMfv/bin/python",
+    "python.terminal.activateEnvironment": false,
+    // "code-runner.runInTerminal": true,
+    "code-runner.executorMap": {
+        // "python": "pipenv run $pythonPath manage.py runscript $fileNameWithoutExt"
+        // "python": "pipenv run $pythonPath $fullFileName"
+        "python": "$pythonPath manage.py runscript $fileNameWithoutExt"
+        // "python": "$pythonPath -u $fullFileName"
+    }
+}
+    
