@@ -7,45 +7,75 @@ from django.apps import apps
 # $ find . -exec stat -c "%F %s %X %Y %n" {} \; > file
 # %F=fileType %s=totalSizeBytes %X=lastAccess %Y=lastModification %n=fileName
 
+# actual linux command:
+# sudo find /mnt \( -path '*/c' -o -path '*/System\ Volume\ Information' \) -prune -o -name '*' -exec stat -c "%F %s %X %Y %n" {} + > /home/cos/find_all_stat`
 
 class FileStat:
 
     def __init__(self):
+
+        self.server_name = ''
+        self.server_addr = ''
+        # name of source file with data
+        self.source_file_name = '' 
+
         self.files_stat = {
-            'id': [],
-            'stat_file_names': [],
+            # index of record
+            'i': [],
+            # list of booleans, True for file, False for directory
+            'is_files' : [],
+            # str digits = size in bytes
             'sizes': [],
-            'births': [],
-            'accesses': [],
-            'modifications': [],
-            'directories': [],
-            'names': [],
+            # str digits = last accessed time in seconds from epoch
+            'acc_times': [],
+            # str digits = last modified time in seconds from epoch
+            'mod_times': [],
+            # path like '/mnt/d' with depth=2
+            'root_dir_paths': [],
+            # path like '/maindir/subdir/lastdir/'
+            'parent_dir_paths': [],
+            # name of file from storage, end of path after '/', including extension
+            'file_names': [],
+            # found suffix at end of file_name, after '.'; can be extension like '.pdf'
             'suffixes': []
         }
-        self.re_pattern = ''
+        self.re_pattern = self._file_re_pattern()
 
-    def eat_file(self, file_path):
+    def _file_re_pattern(self):
+        # `stat -c "%F %s %X %Y %n" <file>` linux bash command
+        file_type = r'regular file\s'
+        size = acc_time = mod_time = r'(\d+)\s'
+        # match path beginning with ./
+        # parent_dir_path = r'(\.?\/.*\/)'
+        parent_dir_path = r'\.?(\/.*\/)'
+        # file_name returns [full_file_name, .ext or '']
+        file_name = r'([^/]*?(\.\w+$|$))'
 
-        stat_file_name = re.compile(r'.*\/([^/]*)$').match(file_path).group(1)
+        return f'{file_type}{size}{acc_time}{mod_time}{parent_dir_path}{file_name}'
+
+    def eat_file(self, file_path, limit=2):
+
+        self.source_file_name = re.compile(r'.*\/([^/]*)$').match(file_path).group(1)
         file_stat_re = re.compile(self.re_pattern)
 
         with open(file_path) as file_reader:
-            id = 1
+            i = 1
             for line in file_reader:
-                if m := file_stat_re.match(line):
-                    size, birth, access, modification, _,\
-                    directory, name, suffix = m.groups()
+                # limit for testing
+                if i >= limit: break;
 
-                    self.files_stat['id'].append(id)
-                    self.files_stat['stat_file_names'].append(stat_file_name)
+                if m := file_stat_re.match(line):
+                    size, acc_time, mod_time, _,\
+                    parent_dir_path, file_name, suffix = m.groups()
+
+                    self.files_stat['i'].append(i)
                     self.files_stat['sizes'].append(size)
-                    self.files_stat['births'].append(birth)
-                    self.files_stat['accesses'].append(access)
-                    self.files_stat['modifications'].append(modification)
-                    self.files_stat['directories'].append(directory)
-                    self.files_stat['names'].append(name)
+                    self.files_stat['acc_times'].append(acc_time)
+                    self.files_stat['mod_times'].append(mod_time)
+                    self.files_stat['parent_dir_paths'].append(parent_dir_path)
+                    self.files_stat['file_names'].append(file_name)
                     self.files_stat['suffixes'].append(suffix)
-                    id += 1
+                    i += 1
     
     def suffixes(self):
         suf_dict = {}
@@ -76,7 +106,7 @@ class FileStat:
         Return pdf_s sizes, unique (id) and same (ids).
         dict same_size: key: size_str, value: [ids_int]
         dict unique_sizes: key: size_str, value: id_int
-        id_int from self.files_stat['id']
+        id_int from self.files_stat['i']
         """
         sizes = {
             'same_sizes': {},
@@ -85,26 +115,26 @@ class FileStat:
 
         pdf_s_ids = self.pdf_s_ids()
 
-        for id in pdf_s_ids:
+        for i in pdf_s_ids:
             # if id > 10000: break;
 
-            name = self.files_stat['names'][id]
-            size = self.files_stat['sizes'][id]
+            file_name = self.files_stat['file_names'][i]
+            size = self.files_stat['sizes'][i]
 
             if ss := sizes['same_sizes'].get(size):
-                ss.append(id)
+                ss.append(i)
             elif us_id := sizes['unique_sizes'].get(size):
-                sizes['same_sizes'][size] = [us_id, id]
+                sizes['same_sizes'][size] = [us_id, i]
                 del sizes['unique_sizes'][size]
             else:
-                sizes['unique_sizes'][size] = id
+                sizes['unique_sizes'][size] = i
 
         return sizes
     
     def pdf_same_sizes_names(self):
         """
-        Iterates through lists of same size pdf_s and get only the first occurrence as name.
-        Returns list of pdf_s names.
+        Iterates through lists of same size pdf_s and get only the first occurrence as file_name.
+        Returns list of pdf_s file_names.
         """
         pdf_names = []
 
@@ -120,43 +150,16 @@ class FileStat:
 
         return pdf_names
 
-
-
-def file_re_pattern():
-    file_type = r'regular file\s'
-    # sWXYZ "%s %W %X %Y %Z" in stat linux bash command
-    size = birth = access = modification = change = r'(\d+)\s'
-    dir_path = r'(\.?\/.*\/)'
-    # file_name returns [full_file_name, .ext or '']
-    file_name = r'([^/]*?(\.\w+$|$))'
-
-    return file_type + size + birth + access + modification + change + \
-        dir_path + file_name
-
-# line = "regular file 84908320 0 1535538397 1517314540 1517314540 ./1.Comenzi Clienti/2018/02. Februarie/01.02.2018/Aldea Stefan/" +\
-# "345506492-Curs-de-Chirurgie-Pentru-Studenti-Anii-IV-Si-v-M-Beuran-Vol-I-2013" + \
-# ".pdf"
-# m = file_stat_re.match(line)
-# for g in m.groups():
-#     print(repr(g))
-
-
 app_path = apps.get_app_config('ep_analyze').path
 files_stat_path = os.path.join(app_path, 'ep_files_stat')
 
-drive_stat_path = os.path.join(files_stat_path, 'drive_stat_FsWXYZn')
-comenzi_1_stat_path = os.path.join(files_stat_path, 'comenzi_2015_stat_FsWXYZn')
-comenzi_2_stat_path = os.path.join(files_stat_path, 'comenzi_2016_2018_stat_FsWXYZn')
-comenzi_3_stat_path = os.path.join(files_stat_path, 'comenzi_stat_FsWXYZn_')
+source_file_path = os.path.join(files_stat_path, 'find_all_stat')
 
-FS = FileStat()
-FS.re_pattern = file_re_pattern()
-# print('eat files begin:', t1:=time())
-FS.eat_file(drive_stat_path)
-FS.eat_file(comenzi_1_stat_path)
-FS.eat_file(comenzi_2_stat_path)
-FS.eat_file(comenzi_3_stat_path)
-# print('eat files end', t2:=time())
+
+# FS = FileStat()
+# print('eat file begin:', t1:=time())
+# FS.eat_file(drive_stat_path)
+# print('eat file end', t2:=time())
 # print('total time:', t2 - t1)
 
 # def test():
