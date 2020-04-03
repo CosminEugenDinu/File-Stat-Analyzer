@@ -1,12 +1,20 @@
 {
     "python.pythonPath": "/home/cos/.local/share/virtualenvs/ep_online-yIzJRMfv/bin/python",
     "python.terminal.activateEnvironment": false,
+    "code-runner.clearPreviousOutput": true,
     // "code-runner.runInTerminal": true,
     "code-runner.executorMap": {
         // "python": "pipenv run $pythonPath manage.py runscript $fileNameWithoutExt"
         // "python": "pipenv run $pythonPath $fullFileName"
-        "python": "$pythonPath manage.py runscript $fileNameWithoutExt"
-        // "python": "$pythonPath -u $fullFileName"
+
+        /*** run tests.py from djangoproject/app/scripts/ ***/
+        "python": "cd $dir && $pythonPath $workspaceRoot/manage.py runscript tests"
+
+        // "python": "cd $dir && cd .. && $pythonPath -m scripts.tests"
+
+
+        // "python": "$pythonPath $workspaceRoot/manage.py runscript $fileNameWithoutExt"
+        // "python": "cd $dir && $pythonPath -m $fileNameWithoutExt"
     }
 }
     
