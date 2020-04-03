@@ -1,10 +1,10 @@
-import unittest
 import re
 
 def test_FileStat_re_pattern():
     from . import file_stat
     fs = file_stat.FileStat()
-    pattern_comp = re.compile(fs.re_pattern)
+
+    compiled_pattern = re.compile(fs.re_pattern)
 
     dir_lines = (
         '''directory 512 1585856724 1528743541 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bianca Constantin/Gramatica''',
@@ -71,17 +71,14 @@ def test_FileStat_re_pattern():
         '''regular file 84522077 1528743474 1528273647 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/grammatik-aktiv-cornelsen.pdf/''',
     )
 
-    matches = (
-        ('directory', '512', '1585856724', '1528743541', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bianca Constantin/', 'Gramatica')
-    matches2 = ('regular file', '84522077', '1528743474' '1528273647', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'grammatik-aktiv-cornelsen.pdf')
+    # let's begin
 
-
-    if dir_m := pattern_comp.match(line1):
+    if d := compiled_pattern.match(line1):
         print(dir_m)
     else:
         print('dir not matched', end='\n\n')
     
-    if file_m := pattern_comp.match(line2):
+    if file_m := compiled_pattern.match(line2):
         print(file_m)
     else:
         print('file not matched')
