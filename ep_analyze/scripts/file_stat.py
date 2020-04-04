@@ -41,6 +41,18 @@ class FileStat:
         }
         self.re_pattern = self._file_re_pattern()
 
+    # def _file_re_pattern(self):
+    #     # `stat -c "%F %s %X %Y %n" <file>` linux bash command
+    #     file_type = r'regular file\s'
+    #     size = acc_time = mod_time = r'(\d+)\s'
+    #     # match path beginning with ./
+    #     # parent_dir_path = r'(\.?\/.*\/)'
+    #     parent_dir_path = r'\.?(\/.*\/)'
+    #     # file_name returns [full_file_name, .ext or '']
+    #     file_name = r'([^/]*?(\.\w+$|$))'
+
+    #     return f'{file_type}{size}{acc_time}{mod_time}{parent_dir_path}{file_name}'
+
     def _file_re_pattern(self):
         # `stat -c "%F %s %X %Y %n" <file>` linux bash command
         file_type = r'regular file\s'
