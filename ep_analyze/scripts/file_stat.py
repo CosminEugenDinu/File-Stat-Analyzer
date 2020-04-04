@@ -39,7 +39,7 @@ class FileStat:
             # found suffix at end of file_name, after '.'; can be extension like '.pdf'
             'suffixes': []
         }
-        self.re_pattern = self._file_re_pattern()
+        # self.re_pattern = self._file_re_pattern()
 
     # def _file_re_pattern(self):
     #     # `stat -c "%F %s %X %Y %n" <file>` linux bash command
@@ -54,17 +54,21 @@ class FileStat:
     #     return f'{file_type}{size}{acc_time}{mod_time}{parent_dir_path}{file_name}'
 
     def _file_re_pattern(self):
+        """
+        Test online here https://pythex.org/
+        """
         # `stat -c "%F %s %X %Y %n" <file>` linux bash command
-        file_type = r'regular file\s'
+        file_type = r'(regular file|directory)\s'
         size = acc_time = mod_time = r'(\d+)\s'
-        # match path beginning with ./
-        # parent_dir_path = r'(\.?\/.*\/)'
-        parent_dir_path = r'\.?(\/.*\/)'
+        # match root_dir_path like /mnt/d ; can begin with ./
+        root_dir_path = r'(\.?\/[^/]*\/[^/]*)'
+        # match path like /path/to/parent_dir/
+        parent_dir_path = r'(\/.*\/)'
         # file_name returns [full_file_name, .ext or '']
-        file_name = r'([^/]*?(\.\w+$|$))'
+        file_name = r'(\.?[^/]*?[^/](\.\w{1,10}$|$))'
 
-        return f'{file_type}{size}{acc_time}{mod_time}{parent_dir_path}{file_name}'
-
+        return f'{file_type}{size}{acc_time}{mod_time}{root_dir_path}{parent_dir_path}{file_name}'
+    
     def eat_file(self, file_path, limit=2):
 
         self.source_file_name = re.compile(r'.*\/([^/]*)$').match(file_path).group(1)
