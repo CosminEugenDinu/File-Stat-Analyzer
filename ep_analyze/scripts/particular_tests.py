@@ -1,6 +1,5 @@
-from django.test import TestCase
+from dev_tools.messages import Messages
 import re
-import sys
 
 
 def test_FileStat_re_pattern(*args):
@@ -12,10 +11,10 @@ def test_FileStat_re_pattern(*args):
         v1 = True; v = True
 
     from . import file_stat
-    fs = file_stat.FileStat()
+    fs = file_stat.FileStatReader()
 
     compiled_pattern = re.compile(fs._file_re_pattern())
-    print(fs._file_re_pattern())
+    # print(fs._file_re_pattern())
     dir_lines = (
         (
         # 0
@@ -114,67 +113,6 @@ def test_FileStat_re_pattern(*args):
 
     # let's begin
     lines = dir_lines + file_lines
-    
-    def Messages(comment=''):
-        """
-        Returns tuple of 2 closures.
-
-        Ussage example:
-
-        add_info_msg, get_info_msgs = Messages('Info')
-        add_success_msg, get_success_msgs = Messages('Success')
-        add_failure_msg, get_failures_msgs = Messages('Fail')
-
-        for i in range(10):
-            add_success_msg('line matched')
-        
-        add_success_msg('Method succeeded')
-
-        str_for_print = ''.join(f'{value} {msg}\n' 
-            for msg, value in get_success_msgs().items())
-
-        print(str_for_print)
-        """
-
-        _who_called_me = sys._getframe(1).f_code.co_name
-        _msgs_count = {_who_called_me: comment}
-        
-        def add_msg(msg):
-            nonlocal _msgs_count
-
-            if type(msg) is not str:
-                raise Exception('msg must be of type str')
-
-            if _msgs_count.get(msg) is not None:
-                _msgs_count[msg] += 1
-            else:
-                _msgs_count[msg] = 1
-
-            return True
-        
-        def get_msgs():
-            nonlocal _msgs_count
-            return _msgs_count
-
-        return add_msg, get_msgs
-
-    def str_messages(*dict_messages):
-
-        def human_str(msg_dict):
-            return ''.join(f'{value} {msg}\n' for msg, value in msg_dict.items())
-        def records_str(msg_dict):
-            return f'total records {len(msg_dict) -1}\n'
-        def dashed_line(dashes):
-            return '-' * dashes + '\n'
-            
-        str_for_print = ''
-        dashes = 20
-        for msg_dict in dict_messages:
-            str_for_print += human_str(msg_dict)
-            str_for_print += records_str(msg_dict)
-            str_for_print += dashed_line(dashes)
-        
-        return str_for_print
 
     def test_match_line(lines):
 
@@ -220,16 +158,16 @@ def test_FileStat_re_pattern(*args):
 
         messages = []
         # verbosity level
-        v1 and messages.append(get_info_msgs())
-        v2 and messages.append(get_success_msgs())
-        v and messages.append(get_failures_msgs())
-        
+        v1 and (i := get_info_msgs()) and messages.append(i)
+        v and (s := get_success_msgs()) and messages.append(s)
+        (f := get_failures_msgs()) and messages.append(f)
+
         return messages
 
     def test_not_match_line(invalid_lines):
 
         add_info_msg, get_info_msgs = Messages('Info')
-        add_success_msg, get_success_msgs = Messages('Success')
+        add_success_msg, get_success_msgs = Messages('Success:')
         add_failure_msg, get_failures_msgs = Messages('Fail')
 
         for i in range(len(invalid_lines)):
@@ -250,18 +188,16 @@ def test_FileStat_re_pattern(*args):
 
         messages = []
         # verbosity level
-        v1 and messages.append(get_info_msgs())
-        v2 and messages.append(get_success_msgs())
-        v and messages.append(get_failures_msgs())
+        v1 and (i := get_info_msgs()) and messages.append(i)
+        v and (s := get_success_msgs()) and messages.append(s)
+        (f := get_failures_msgs()) and messages.append(f)
+        
 
         return messages
 
     match_line_msgs = test_match_line(lines)
     not_match_line_msgs = test_not_match_line(invalid_lines)
     messages = match_line_msgs + not_match_line_msgs
-
-    print(str_messages(*match_line_msgs))
-    print(str_messages(*not_match_line_msgs))
 
     return messages
     
@@ -273,13 +209,7 @@ def run(*args):
     """
     print('-------------------------')
     messages = test_FileStat_re_pattern(*args)
-    print(messages)
+    
 
 def code_runner_direct_run():
     print('hello from code-runner')
-
-# if __name__=='__main__':
-#     code_runner_direct_run()
-
-if __name__ == '__main__':
-    unittest.main()
