@@ -4,14 +4,17 @@
     "code-runner.clearPreviousOutput": true,
     // "code-runner.runInTerminal": true,
     "code-runner.executorMap": {
+        /*** simple python file ***/
+        // "python": "$pythonPath -u $fullFileName"
+
         // "python": "pipenv run $pythonPath manage.py runscript $fileNameWithoutExt"
         // "python": "pipenv run $pythonPath $fullFileName"
 
         /*** run particular_tests.py from djangoproject/app/scripts/ ***/
-        "python": "$pythonPath $workspaceRoot/manage.py runscript particular_tests --script-args v"
+        "python": "$pythonPath $workspaceRoot/manage.py runscript particular_tests --script-args "
 
         /*** django testing ***/
-        // "python": "$pythonPath $workspaceRoot/manage.py test ep_analyze/scripts/"
+        // "python": "$pythonPath -Wa $workspaceRoot/manage.py test ep_analyze/scripts/"
 
 
     

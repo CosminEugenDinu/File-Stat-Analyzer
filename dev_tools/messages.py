@@ -22,7 +22,6 @@ def Messages(label=''):
         return True
     
     def get_msgs():
-        # nonlocal _msgs_count
 
         if len(_msgs_count) > 0:
 

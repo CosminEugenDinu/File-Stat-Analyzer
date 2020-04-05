@@ -7,92 +7,115 @@ def test_FileStat_re_pattern(*args):
     v = True if 'v' in args else False
     if v1 := True if 'v1' in args else False:
         v = True
-    if v2 := True if 'v2' in args else False:
-        v1 = True; v = True
-
+    
     from . import file_stat
     fs = file_stat.FileStatReader()
 
     compiled_pattern = re.compile(fs._file_re_pattern())
-    # print(fs._file_re_pattern())
+    print(fs._file_re_pattern())
     dir_lines = (
         (
         # 0
         '''directory 512 1585856724 1528743541 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bianca Constantin/Gramatica''',
-        ('directory', '512', '1585856724', '1528743541', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bianca Constantin/', 'Gramatica', ''),
+        ('directory', '512', '1585856724', '1528743541', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bianca Constantin/', 'Gramatica', ''),
         ),
         (
         # 1 directory_name_ends_with.eprintare; extension is .eprintare because I couldn't find a regex to exclude extension based on group 0 'directory'
         '''directory 512 1585856724 1528743541 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bianca Constantin/Gramatica.eprintare''',
-        ('directory', '512', '1585856724', '1528743541', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bianca Constantin/', 'Gramatica.eprintare', '.eprintare'),
+        ('directory', '512', '1585856724', '1528743541', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bianca Constantin/', 'Gramatica.eprintare', '.eprintare'),
         ),
         (
         # 2 directory_name_ends_with.eprintare.ro
         '''directory 512 1585856724 1528743541 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bianca Constantin/Gramatica.eprintare.ro''',
-        ('directory', '512', '1585856724', '1528743541', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bianca Constantin/', 'Gramatica.eprintare.ro', '.ro'),
+        ('directory', '512', '1585856724', '1528743541', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bianca Constantin/', 'Gramatica.eprintare.ro', '.ro'),
         ),
         (
         # 3 .dirname 
         '''directory 512 1585856724 1528743541 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bianca Constantin/.Gramatica''',
-        ('directory', '512', '1585856724', '1528743541', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bianca Constantin/', '.Gramatica', ''),
+        ('directory', '512', '1585856724', '1528743541', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bianca Constantin/', '.Gramatica', ''),
         ),
         (
         # 4 .dirname. 
         '''directory 512 1585856724 1528743541 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bianca Constantin/.Gramatica.''',
-        ('directory', '512', '1585856724', '1528743541', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bianca Constantin/', '.Gramatica.', ''),
+        ('directory', '512', '1585856724', '1528743541', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bianca Constantin/', '.Gramatica.', ''),
         ),
         (
         # 5 root path begins with './' meaning that is not truly root 
         '''directory 512 1585856724 1528743541 ./mnt/comenzi/2018/06.Iunie/.08.06.2018/Bianca Constantin/.Gramatica.''',
-        ('directory', '512', '1585856724', '1528743541', './mnt/comenzi', '/2018/06.Iunie/.08.06.2018/Bianca Constantin/', '.Gramatica.', '')
-        )
+        ('directory', '512', '1585856724', '1528743541', './mnt/comenzi/2018/06.Iunie/.08.06.2018/Bianca Constantin/', '.Gramatica.', '')
+        ),
+        # 6
+        (
+        '''directory 4096 1558449819 1585845232 /mnt/c''',
+        ('directory', '4096', '1558449819', '1585845232', '/mnt/', 'c', '')
+        ),
+        # 7
+        (
+        '''directory 512 1585855239 1578305874 /mnt/comenzi''',
+        ('directory', '512', '1585855239', '1578305874', '/mnt/', 'comenzi', '')
+        ),
+        # 8
+        (
+        '''directory 512 1585806673 1533081602 /mnt/comenzi/2018''',
+        ('directory', '512', '1585806673', '1533081602', '/mnt/comenzi/', '2018', '')
+        ),
+        # 9
+        (
+        '''directory 512 1585806673 1533081602 /mnt''',
+        ('directory', '512', '1585806673', '1533081602', '', 'mnt', '')
+        ),
+
     )
 
     file_lines = (
         (
-        # 6 .pdf
+        # 9 .pdf
         '''regular file 84522077 1528743474 1528273647 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/grammatik-aktiv-cornelsen.pdf''',
-        ('regular file', '84522077', '1528743474', '1528273647', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'grammatik-aktiv-cornelsen.pdf', '.pdf'),
+        ('file', '84522077', '1528743474', '1528273647', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'grammatik-aktiv-cornelsen.pdf', '.pdf'),
         ),
         (
-        # 7 filenamepdf
+        # 10 filenamepdf
         '''regular file 84522077 1528743474 1528273647 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/grammatik-aktiv-cornelsenpdf''',
-        ('regular file', '84522077', '1528743474', '1528273647', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'grammatik-aktiv-cornelsenpdf', ''),
+        ('file', '84522077', '1528743474', '1528273647', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'grammatik-aktiv-cornelsenpdf', ''),
         ),
         (
-        # 8 filename.eprintare
+        # 11 filename.eprintare
         '''regular file 84522077 1528743474 1528273647 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/grammatik-aktiv-cornelsen.eprintare''',
-        ('regular file', '84522077', '1528743474', '1528273647', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'grammatik-aktiv-cornelsen.eprintare', '.eprintare'),
+        ('file', '84522077', '1528743474', '1528273647', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'grammatik-aktiv-cornelsen.eprintare', '.eprintare'),
         ), 
         (
-        # 9 filename.
+        # 12 filename.
         '''regular file 84522077 1528743474 1528273647 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/grammatik-aktiv-cornelsen.''',
-        ('regular file', '84522077', '1528743474', '1528273647', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'grammatik-aktiv-cornelsen.', ''),
+        ('file', '84522077', '1528743474', '1528273647', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'grammatik-aktiv-cornelsen.', ''),
         ),
         (
-        # 10 .filename
+        # 13 .filename
         '''regular file 84522077 1528743474 1528273647 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/.grammatik-aktiv-cornelsen''',
-        ('regular file', '84522077', '1528743474', '1528273647', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', '.grammatik-aktiv-cornelsen', ''),
+        ('file', '84522077', '1528743474', '1528273647', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', '.grammatik-aktiv-cornelsen', ''),
         ),
         (
-        # 11 .filename.f
+        # 14 .filename.f
         '''regular file 84522077 1528743474 1528273647 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/.grammatik-aktiv-cornelsen.f''',
-        ('regular file', '84522077', '1528743474', '1528273647', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', '.grammatik-aktiv-cornelsen.f', '.f'),
+        ('file', '84522077', '1528743474', '1528273647', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', '.grammatik-aktiv-cornelsen.f', '.f'),
         ),
         (
-        # 12 file name . no ext 
+        # 15 file name . no ext 
         '''regular file 84522077 1528743474 1528273647 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/gram matik-aktiv-cornelsen . no ext''',
-        ('regular file', '84522077', '1528743474', '1528273647', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'gram matik-aktiv-cornelsen . no ext', ''),
+        ('file', '84522077', '1528743474', '1528273647', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'gram matik-aktiv-cornelsen . no ext', ''),
         ),
         (
-        # 13 file name .no ext 
+        # 16 file name .no ext 
         '''regular file 84522077 1528743474 1528273647 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/gram matik-aktiv-cornelsen .no ext''',
-        ('regular file', '84522077', '1528743474', '1528273647', '/mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'gram matik-aktiv-cornelsen .no ext', ''),
+        ('file', '84522077', '1528743474', '1528273647', '/mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'gram matik-aktiv-cornelsen .no ext', ''),
         ),
         (
-        # 14 file name.this_is_not_extension_because_is_grater_that_10 
+        # 17 file name.this_is_not_extension_because_is_grater_that_10 
         '''regular file 84522077 1528743474 1528273647 ./mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/gram matik-aktiv-cornelsen.this_is_not_extension_because_is_grater_that_10''',
-        ('regular file', '84522077', '1528743474', '1528273647', './mnt/comenzi', '/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'gram matik-aktiv-cornelsen.this_is_not_extension_because_is_grater_that_10', '')
+        ('file', '84522077', '1528743474', '1528273647', './mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'gram matik-aktiv-cornelsen.this_is_not_extension_because_is_grater_that_10', '')
+        ),
+        (
+        '''regular empty file 0 1528743474 1528273647 ./mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/gram matik-aktiv-cornelsen.this_is_not_extension_because_is_grater_that_10''',
+        ('file', '0', '1528743474', '1528273647', './mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/', 'gram matik-aktiv-cornelsen.this_is_not_extension_because_is_grater_that_10', '')
         )
     )
 
@@ -107,8 +130,7 @@ def test_FileStat_re_pattern(*args):
         '''regular file 84522077 15287434741528273647 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/grammatik-aktiv-cornelsen.pdf''',
         # 4 invalid root_dir_path
         '''regular file 84522077 1528743474 1528273647 __/mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/grammatik-aktiv-cornelsen.pdf''',
-        # 5 invalid trailing '/'
-        '''regular file 84522077 1528743474 1528273647 /mnt/comenzi/2018/06.Iunie/08.06.2018/Bia. C. C-tin/Gramatica/grammatik-aktiv-cornelsen.pdf/''',
+       
     )
 
     # let's begin
@@ -129,7 +151,7 @@ def test_FileStat_re_pattern(*args):
             test_match = compiled_pattern.match(src_str)
             try:
                 assert type(test_match) is re.Match, \
-                    'line not matched at all'
+                    f'line not matched at all at case {i}'
             except AssertionError as e:
                 add_failure_msg(str(e))
                 continue
@@ -202,13 +224,13 @@ def test_FileStat_re_pattern(*args):
     return messages
     
 
-
 def run(*args):
     """
     this function is called by django-extensions runscript
     """
     print('-------------------------')
     messages = test_FileStat_re_pattern(*args)
+    print(messages)
     
 
 def code_runner_direct_run():

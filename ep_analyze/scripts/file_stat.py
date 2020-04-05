@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 from time import time
 from django.apps import apps
 
@@ -10,88 +11,122 @@ from django.apps import apps
 # actual linux command:
 # sudo find /mnt \( -path '*/c' -o -path '*/System\ Volume\ Information' \) -prune -o -name '*' -exec stat -c "%F %s %X %Y %n" {} + > /home/cos/find_all_stat`
 
-class FileStat:
+class FileStatReader:
 
     def __init__(self):
 
         self.server_name = ''
         self.server_addr = ''
-        # name of source file with data
-        self.source_file_name = '' 
 
-        self.files_stat = {
-            # index of record
-            'i': [],
-            # list of booleans, True for file, False for directory
-            'is_files' : [],
-            # str digits = size in bytes
-            'sizes': [],
-            # str digits = last accessed time in seconds from epoch
-            'acc_times': [],
-            # str digits = last modified time in seconds from epoch
-            'mod_times': [],
-            # path like '/mnt/d' with depth=2
-            'root_dir_paths': [],
-            # path like '/maindir/subdir/lastdir/'
-            'parent_dir_paths': [],
-            # name of file from storage, end of path after '/', including extension
-            'file_names': [],
-            # found suffix at end of file_name, after '.'; can be extension like '.pdf'
-            'suffixes': []
-        }
-        # self.re_pattern = self._file_re_pattern()
-
-    # def _file_re_pattern(self):
-    #     # `stat -c "%F %s %X %Y %n" <file>` linux bash command
-    #     file_type = r'regular file\s'
-    #     size = acc_time = mod_time = r'(\d+)\s'
-    #     # match path beginning with ./
-    #     # parent_dir_path = r'(\.?\/.*\/)'
-    #     parent_dir_path = r'\.?(\/.*\/)'
-    #     # file_name returns [full_file_name, .ext or '']
-    #     file_name = r'([^/]*?(\.\w+$|$))'
-
-    #     return f'{file_type}{size}{acc_time}{mod_time}{parent_dir_path}{file_name}'
+        # self.files_stat = {
+        #     # index of record
+        #     'i': [],
+        #     # list of booleans, True for file, False for directory
+        #     'is_files' : [],
+        #     # str digits = size in bytes
+        #     'sizes': [],
+        #     # str digits = last accessed time in seconds from epoch
+        #     'acc_times': [],
+        #     # str digits = last modified time in seconds from epoch
+        #     'mod_times': [],
+        #     # path like '/mnt/d' with depth=2
+        #     'root_dir_paths': [],
+        #     # path like '/maindir/subdir/lastdir/'
+        #     'parent_dir_paths': [],
+        #     # name of file from storage, end of path after '/', including extension
+        #     'file_names': [],
+        #     # found suffix at end of file_name, after '.'; can be extension like '.pdf'
+        #     'suffixes': []
+        # }
 
     def _file_re_pattern(self):
         """
         Test online here https://pythex.org/
         """
         # `stat -c "%F %s %X %Y %n" <file>` linux bash command
-        file_type = r'(regular file|directory)\s'
+        # match 'file' or 'directory'
+        _type = '(?:regular |)(?:empty |)(file|directory)\s'
         size = acc_time = mod_time = r'(\d+)\s'
-        # match root_dir_path like /mnt/d ; can begin with ./
-        root_dir_path = r'(\.?\/[^/]*\/[^/]*)'
-        # match path like /path/to/parent_dir/
-        parent_dir_path = r'(\/.*\/)'
-        # file_name returns [full_file_name, .ext or '']
-        file_name = r'(\.?[^/]*?[^/](\.\w{1,10}$|$))'
+        # match path like /path/to/parent_dir/ 
+        parent_dir_path = r'(\.?\/.*\/|)\/?'
+        # name returns [full_file_name, .ext or '']
+        name = r'(\.?[^/]*?(\.\w{1,10}$|$))'
 
-        return f'{file_type}{size}{acc_time}{mod_time}{root_dir_path}{parent_dir_path}{file_name}'
+        return f'{_type}{size}{acc_time}{mod_time}{parent_dir_path}{name}'
     
-    def eat_file(self, file_path, limit=2):
+    def file_to_table(self, stat_file_path, model):
+        """
+        Read source stat file, match patterns (fields) and insert to
+        corresponding table (model) in database line by line
+        """
+        pat_str = self._file_re_pattern()
+        pat_bytes = pat_str.encode()
 
-        self.source_file_name = re.compile(r'.*\/([^/]*)$').match(file_path).group(1)
-        file_stat_re = re.compile(self.re_pattern)
+        s_regex = re.compile(pat_str)
+        b_regex = re.compile(pat_bytes)
+        
 
-        with open(file_path) as file_reader:
-            i = 1
-            for line in file_reader:
-                # limit for testing
-                if i >= limit: break;
+        print('.'*10+'file_to_table test'+'.'*10)
+        lines_traveled = 0
+        lines_matched = 0
+        with open(stat_file_path, 'rb') as bytes_reader:
+            t1 = time()
+            for line in bytes_reader:
+                lines_traveled += 1
+                if m := b_regex.match(line):
+                    lines_matched += 1
+                    # print(m.groups())
+            t2 = time()
+        delta1 = t2 - t1
+        print(f'{lines_traveled}/{lines_matched} lines matched')
+        print('bytes read took', delta1)
 
-                if m := file_stat_re.match(line):
-                    size, acc_time, mod_time, _,\
-                    parent_dir_path, file_name, suffix = m.groups()
+        lines_traveled = 0
+        lines_matched = 0
+        lines_not_matched = []
 
-                    self.files_stat['i'].append(i)
-                    self.files_stat['sizes'].append(size)
-                    self.files_stat['acc_times'].append(acc_time)
-                    self.files_stat['mod_times'].append(mod_time)
-                    self.files_stat['parent_dir_paths'].append(parent_dir_path)
-                    self.files_stat['file_names'].append(file_name)
-                    self.files_stat['suffixes'].append(suffix)
-                    i += 1
+        with open(stat_file_path, 'r') as str_reader:
+            t3 = time()
+            for line in str_reader:
+                lines_traveled += 1
+                if m := s_regex.match(line):
+                    lines_matched += 1
+                else:
+                    lines_not_matched.append(lines_traveled)
+
+            t4 = time()
+        delta2= t4 - t3
+        print(f'{lines_traveled}/{lines_matched} lines matched')
+        print('string read took', delta2)
+        print('lines not matched', lines_not_matched)
+
+
+
+
+    # def load_file(self, file_path, limit=2):
+
+    #     # source_file_name = re.compile(r'.*\/([^/]*)$').match(file_path).group(1)
+
+    #     file_stat_re = re.compile(self._file_re_pattern())
+
+    #     with open(file_path) as file_reader:
+    #         i = 1
+    #         for line in file_reader:
+    #             # limit for testing
+    #             if i >= limit: break;
+
+    #             if m := file_stat_re.match(line):
+    #                 size, acc_time, mod_time, _,\
+    #                 parent_dir_path, name, suffix = m.groups()
+
+    #                 self.files_stat['i'].append(i)
+    #                 self.files_stat['sizes'].append(size)
+    #                 self.files_stat['acc_times'].append(acc_time)
+    #                 self.files_stat['mod_times'].append(mod_time)
+    #                 self.files_stat['parent_dir_paths'].append(parent_dir_path)
+    #                 self.files_stat['file_names'].append(name)
+    #                 self.files_stat['suffixes'].append(suffix)
+    #                 i += 1
     
     def suffixes(self):
         suf_dict = {}
