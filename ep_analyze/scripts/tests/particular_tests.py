@@ -8,11 +8,11 @@ def test_FileStat_re_pattern(*args):
     if v1 := True if 'v1' in args else False:
         v = True
     
-    from . import file_stat
+    from .. import file_stat
     fs = file_stat.FileStatReader()
 
-    compiled_pattern = re.compile(fs._file_re_pattern())
-    print(fs._file_re_pattern())
+    compiled_pattern = re.compile(fs._file_re_pattern)
+    # print(fs._file_re_pattern())
     dir_lines = (
         (
         # 0
@@ -183,6 +183,7 @@ def test_FileStat_re_pattern(*args):
         v1 and (i := get_info_msgs()) and messages.append(i)
         v and (s := get_success_msgs()) and messages.append(s)
         (f := get_failures_msgs()) and messages.append(f)
+        assert f == None, messages
 
         return messages
 
@@ -213,7 +214,7 @@ def test_FileStat_re_pattern(*args):
         v1 and (i := get_info_msgs()) and messages.append(i)
         v and (s := get_success_msgs()) and messages.append(s)
         (f := get_failures_msgs()) and messages.append(f)
-        
+        assert f == None , messages
 
         return messages
 
@@ -221,6 +222,7 @@ def test_FileStat_re_pattern(*args):
     not_match_line_msgs = test_not_match_line(invalid_lines)
     messages = match_line_msgs + not_match_line_msgs
 
+    
     return messages
     
 
