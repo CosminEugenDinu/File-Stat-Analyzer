@@ -9,24 +9,34 @@ class FileStat(models.Model):
 
     server_name = models.CharField(max_length=80)
     server_addr = models.CharField(max_length=80)
+
     # 0=directory 1=file %F  file type
     is_file = models.BooleanField()
+
     # %s total size, in bytes
     size = models.BigIntegerField()
+
     # %X time of last access, seconds since Epoch
     acc_time = models.BigIntegerField()
+
     # %Y time of last data modification, seconds since Epoch
     mod_time = models.BigIntegerField()
+
     # parent directory path; begins with '/' or './', ends with '*/parent_dir/'
     parent_dir_path = models.CharField(max_length=1000)
+
     # name with extension (suffix)
     name = models.CharField(max_length=1000)
+
     # only extension (suffix)
     extension = models.CharField(max_length=10)
+
     # time of record in db (timestamp)
     rec_timestamp = models.DateTimeField(auto_now_add=True)
+
     # time of update (with Model.save())
     update_time = models.DateTimeField(auto_now=True)
+
     # exits flag (if not exits then is deleted or moved)
     exists = models.BooleanField(default=True)
     exists_check_time = models.DateTimeField(auto_now=True)
@@ -34,7 +44,5 @@ class FileStat(models.Model):
     def __str__(self):
        return str(self.__dict__)
         # return str((self.get_deferred_fields()))
-    
-
 
     
