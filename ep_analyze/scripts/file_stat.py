@@ -1,8 +1,8 @@
-import os
-import re
-import sys
+import os, sys, re, io
 from time import time
 from django.apps import apps
+from django.db import connection
+from django.utils import timezone
 
 # linux command:
 # $ find . -exec stat -c "%F %s %X %Y %n" {} \; > file
@@ -39,67 +39,161 @@ class FileStatReader:
         #     'suffixes': []
         # }
 
+    @property
     def _file_re_pattern(self):
         """
-        Test online here https://pythex.org/
+        Test online here https://regex101.com/ 
         """
         # `stat -c "%F %s %X %Y %n" <file>` linux bash command
+
         # match 'file' or 'directory'
-        _type = '(?:regular |)(?:empty |)(file|directory)\s'
+        _type = r'(?:regular |)(?:empty |)(file|directory)\s'
+
+        # match groups: (size) (acc_time) (mod_time) as digits
         size = acc_time = mod_time = r'(\d+)\s'
+
         # match path like /path/to/parent_dir/ 
         parent_dir_path = r'(\.?\/.*\/|)\/?'
-        # name returns [full_file_name, .ext or '']
-        name = r'(\.?[^/]*?(\.\w{1,10}$|$))'
+
+        # name returns [full_file_name, .ext or ''] extension < 10 characters
+        name = r'(\.?[^\/]*?(\.\w{1,9}$|$))'
 
         return f'{_type}{size}{acc_time}{mod_time}{parent_dir_path}{name}'
     
-    def file_to_table(self, stat_file_path, model):
+    # filestatbulk_to_table is too slow
+    def __filestatbulk_to_table(self, file_stat_path, model):
         """
         Read source stat file, match patterns (fields) and insert to
         corresponding table (model) in database line by line
         """
-        pat_str = self._file_re_pattern()
-        pat_bytes = pat_str.encode()
-
-        s_regex = re.compile(pat_str)
-        b_regex = re.compile(pat_bytes)
-        
-
-        print('.'*10+'file_to_table test'+'.'*10)
-        lines_traveled = 0
-        lines_matched = 0
-        with open(stat_file_path, 'rb') as bytes_reader:
-            t1 = time()
-            for line in bytes_reader:
-                lines_traveled += 1
-                if m := b_regex.match(line):
-                    lines_matched += 1
-                    # print(m.groups())
-            t2 = time()
-        delta1 = t2 - t1
-        print(f'{lines_traveled}/{lines_matched} lines matched')
-        print('bytes read took', delta1)
+        regex = re.compile(self._file_re_pattern)
+        time_now = timezone.now().isoformat()
 
         lines_traveled = 0
         lines_matched = 0
         lines_not_matched = []
 
-        with open(stat_file_path, 'r') as str_reader:
-            t3 = time()
-            for line in str_reader:
+        # FileStat instances
+        fs_instances = []
+        t1 = time()
+        with open(file_stat_path, 'r') as reader:
+
+            for line in reader:
                 lines_traveled += 1
-                if m := s_regex.match(line):
+                if m := regex.match(line):
                     lines_matched += 1
+                    # if lines_matched >= 50000: break;
+
+                    _type, size, acc_time, mod_time,\
+                    parrent_dir_path, name, extension = m.groups()
+                    
+                    # convert _type from str to bool
+                    _type == 'file' and (_type := True)
+                    _type == 'directory' and (_type := False)
+
+                    new_FileStat = model()
+
+                    new_FileStat.server_name = 'DESKTOP-T77K7H1'
+                    new_FileStat.server_addr = 'localhost'
+                    new_FileStat.is_file = _type
+                    new_FileStat.size = size
+                    new_FileStat.acc_time = acc_time
+                    new_FileStat.mod_time = mod_time
+                    new_FileStat.parent_dir_path = parrent_dir_path
+                    new_FileStat.name = name
+                    new_FileStat.extension = extension
+                    # new_FileStat.rec_timestamp = time_now
+                    # new_FileStat.update_time = time_now
+                    # new_FileStat.exists = True
+                    # new_FileStat.exists_check_time = time_now
+
+                    fs_instances.append(new_FileStat)
+
                 else:
                     lines_not_matched.append(lines_traveled)
 
-            t4 = time()
-        delta2= t4 - t3
+        model.objects.bulk_create(fs_instances)
+        t2 = time()
+        delta = t2 - t1
         print(f'{lines_traveled}/{lines_matched} lines matched')
-        print('string read took', delta2)
-        print('lines not matched', lines_not_matched)
+        # print('lines not matched', lines_not_matched)
+        sys.stderr.write(f'{sys._getframe(0).f_code.co_name} took {delta}')
+    
+    def filestream_to_table(self, file_stat_path, model):
+        """
+        Read provided file, match line, copy to in_memory StringIO(),
+        then copy StringIO to table.
+        """
+        table_name = model._meta.db_table
+        regex = re.compile(self._file_re_pattern)
+        time_now = timezone.now().isoformat()
+        in_memory_stream = io.StringIO()
 
+        lines_traveled = 0
+        lines_matched = 0
+        lines_not_matched = []
+
+        t1 = time()
+        with open(file_stat_path, 'r') as reader:
+            for line in reader:
+                lines_traveled += 1
+
+                m = regex.match(line)
+
+                if m is None:
+                    lines_not_matched.append(lines_traveled)
+                    continue
+                lines_matched += 1
+
+                server_name = 'DESKTOP-9UTLJ6E'
+                server_addr = 'localhost'
+
+                _type, size, acc_time, mod_time,\
+                parent_dir_path, name, extension = m.groups()
+
+                _type == 'file' and (_type := 't')
+                _type == 'directory' and (_type := 'f')
+                
+                rec_timestamp = time_now
+                update_time = time_now
+                exists = 't'
+                exists_check_time = time_now
+
+                
+                line_to_write = '\t'.join(
+                    (
+                    server_name, server_addr,
+                    _type, size, acc_time, mod_time,
+                    parent_dir_path, name, extension,
+                    rec_timestamp, update_time, exists, exists_check_time
+                    )
+                    )
+                in_memory_stream.write(f'{line_to_write}\n')
+
+        t2 = time()
+        delta = t2 - t1
+        sys.stdout.write(f'io.StringIO took:{delta:.2f} seconds\n')
+        in_memory_stream.seek(0)
+
+        with connection.cursor() as cursor:
+            cursor.cursor.copy_from(
+                file=in_memory_stream,
+                table=table_name,
+                sep='\t',
+                columns=(
+                'server_name', 'server_addr',
+                'is_file', 'size', 'acc_time', 'mod_time',
+                'parent_dir_path', 'name', 'extension',
+                'rec_timestamp', 'update_time', 'exists', 'exists_check_time'
+                )
+            )
+        in_memory_stream.close()
+        t3 = time()
+
+        delta = t3-t1
+        print(f'{lines_traveled}/{lines_matched} lines matched')
+        sys.stdout.write(f'{sys._getframe(0).f_code.co_name} took: {delta:.2f} seconds\n')
+        # print('lines not matched', lines_not_matched)
 
 
 
