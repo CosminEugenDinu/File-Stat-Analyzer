@@ -1,27 +1,28 @@
 {
     "python.pythonPath": "/home/cos/.local/share/virtualenvs/ep_online-yIzJRMfv/bin/python",
     "python.terminal.activateEnvironment": false,
-    "code-runner.clearPreviousOutput": true,
-    // "code-runner.runInTerminal": true,
+    // "code-runner.clearPreviousOutput": true,
+    "code-runner.runInTerminal": true,
     "code-runner.executorMap": {
         /*** simple python file ***/
-        // "python": "$pythonPath -u $fullFileName"
+        "python": "$pythonPath -u $fullFileName"
 
         // "python": "pipenv run $pythonPath manage.py runscript $fileNameWithoutExt"
         // "python": "pipenv run $pythonPath $fullFileName"
 
         /*** run particular_tests.py from djangoproject/app/scripts/ ***/
-        "python": "$pythonPath $workspaceRoot/manage.py runscript particular_tests --script-args "
+        // "python": "$pythonPath $workspaceRoot/manage.py runscript particular_tests --script-args "
 
         /*** django testing ***/
-        // "python": "$pythonPath -Wa $workspaceRoot/manage.py test ep_analyze/scripts/"
+        // "python": "$pythonPath -Wa $workspaceRoot/manage.py test ep_analyze/scripts/tests"
 
+        // "python": "cd $dir && cd .. && $pythonPath -m scripts.play"
 
-    
-        // "python": "cd $dir && cd .. && $pythonPath -m scripts.particular_tests"
-
-
+        /*** run django script ***/
         // "python": "$pythonPath $workspaceRoot/manage.py runscript $fileNameWithoutExt"
+        // "python": "$pythonPath $workspaceRoot/manage.py runscript ep_analyze.scripts.play"
+        // "python": "$pythonPath $workspaceRoot/manage.py runscript ep_analyze.scripts.analyze_files"
+        
         // "python": "cd $dir && $pythonPath -m $fileNameWithoutExt"
     }
 }

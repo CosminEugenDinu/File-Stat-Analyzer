@@ -46,3 +46,25 @@ class FileStat(models.Model):
         # return str((self.get_deferred_fields()))
 
     
+class FilesRelatives(models.Model):
+    """
+    Files that are identical or very close by size or name.
+    """
+
+    file_id = models.ForeignKey(FileStat,
+        related_name='file_id',
+        on_delete=models.CASCADE)
+
+    # id of file from FileStat to which is related
+    close_match_id = models.ForeignKey(FileStat,
+        related_name='close_math_id',
+        on_delete=models.CASCADE)
+
+    # 0 means they are identical by size or by name
+    # identical py extension is assumed
+    by_size = models.IntegerField()
+    by_name = models.IntegerField()
+
+    class Meta:
+        unique_together = ('file_id', 'close_match_id')
+
