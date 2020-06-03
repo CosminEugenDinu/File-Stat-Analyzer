@@ -10,3 +10,8 @@ d['key3'] += 1
 
 print(dict_table_str(d))
 
+# %%
+%%time
+print('from ipython')
+
+# %%

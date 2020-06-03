@@ -3,3 +3,4 @@
 __pycache__
 ep_files_stat
 *.pyc
+*.csv
