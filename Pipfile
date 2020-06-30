@@ -10,7 +10,7 @@ ipykernel = "*"
 tabulate = "*"
 
 [packages]
-django = "*"
+django = "==3.0.7"
 psycopg2 = "*"
 pytesseract = "*"
 pymupdf = "*"
