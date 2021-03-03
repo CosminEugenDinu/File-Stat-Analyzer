@@ -1,10 +1,8 @@
 
 # File-Stat-Analyzer
+File statistics analyzer
 
-- Analyze files
-- Parse PDF files, find ISBN, keywords, etc.
-
-Python (Django) program that parses files with millions of rows representing files descriptions and fast insert in PostgresQL DB directly from buffer. The purpose is fast lookup, report analyses, classification. Also analyzes PDF files: image OCR, parse content, find keywords, etc.
+Python (Django) program that parses files with millions of rows representing file descriptions and fast insert in PostgresQL DB directly from the in-memory stream buffer. The purpose is fast lookup, report analyses, classification. Also organize paths and analyze PDF files (image OCR, parse content, find isbn, keywords etc.).
 
 # Prerequisites
 
